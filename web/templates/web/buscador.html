@@ -1,0 +1,152 @@
+<!-- web/templates/web/buscador.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Productos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'web/css/styles.css' %}">
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="menu-icon">
+                <i class="fas fa-bars"></i>
+            </div>
+            <div class="logo">
+                Buscador de Productos
+            </div>
+            <div class="user-actions">
+                <div class="user-menu">
+                    <div class="user-icon" id="userMenuToggle">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="dropdown-menu" id="userDropdown">
+                        <div class="dropdown-header">
+                            <span class="username">{{ request.user.username }}</span>
+                        </div>
+                        <ul class="dropdown-list">
+                            <li><a href="#"><i class="fas fa-user-circle"></i> Perfil</a></li>
+                            <li><a href="#"><i class="fas fa-cog"></i> Configuración</a></li>
+                            <li class="dropdown-divider"></li>
+                            <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <style>
+            .user-actions {
+                display: flex;
+                align-items: center;
+            }
+            
+            @media (max-width: 640px) {
+                .logout-button {
+                    display: none; /* Ocultar el botón directo en móviles para ahorrar espacio */
+                }
+            }
+            </style>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Search Section -->
+            <section class="search-container">
+                <h2 class="search-title">Consulta de Productos</h2>
+                
+                <div class="search-tabs">
+                    <div id="tab-descripcion" class="search-tab active">Búsqueda por descripción</div>
+                    <div id="tab-codigo" class="search-tab">Búsqueda por código</div>
+                </div>
+                
+                <form id="search-form" class="search-form">
+                    <div class="search-input-group">
+                        <input 
+                            type="text" 
+                            id="search-query" 
+                            class="search-input" 
+                            placeholder="Ingrese descripción del producto..." 
+                            autocomplete="off">
+                        <button type="button" id="camera-btn" class="camera-button">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                    <button type="submit" class="search-button">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </form>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results-container" class="results-container">
+                <div class="message">
+                    Ingrese un término de búsqueda para ver resultados
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <button id="cormons-btn" class="action-button">CORMONS</button>
+        </footer>
+    </div>
+
+    <!-- Templates -->
+    <template id="loading-template">
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            <span>Buscando productos...</span>
+        </div>
+    </template>
+
+    <template id="single-product-template">
+        <div class="product-card">
+            <h3 class="product-name"></h3>
+            <div class="product-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Código:</span>
+                    <span class="meta-value product-code"></span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Stock:</span>
+                    <span class="meta-value product-stock"></span>
+                </div>
+            </div>
+            <button class="back-button" id="back-to-list">
+                <i class="fas fa-arrow-left"></i> Volver a la lista
+            </button>
+        </div>
+    </template>
+
+    <template id="product-list-template">
+        <div class="products-table-container">
+            <table class="products-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Descripción</th>
+                        <th>Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Las filas se agregarán dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </template>
+
+    <template id="message-template">
+        <div class="message"></div>
+    </template>
+
+    <script src="{% static 'web/js/buscador.js' %}"></script>
+</body>
+</html>
