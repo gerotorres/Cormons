@@ -657,12 +657,3 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ### 8.3 Optimización de Rendimiento
 - Implementar caché para endpoints de solo lectura
 - Utilizar select_related/prefetch_related para optimizar consultas
-
-## 9. Apéndice
-
-### 9.1 Diagrama de Flujo de Comunicación
-[INCLUIR DIAGRAMA EN FUTURAS VERSIONES]
-
-### 9.2 Referencias
-- Django REST Framework: https://www.django-rest-framework.org/
-- JSON Web Tokens: https://jwt.io/
