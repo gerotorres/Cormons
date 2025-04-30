@@ -13,11 +13,10 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 # Hosts permitidos
 ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
 
-# Base de datos: usar PostgreSQL en producción
-DATABASES = {
-    'default': dj_database_url.config(default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}", conn_max_age=600)
-}
 
+DATABASES = {
+    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
+}
 # Aplicaciones instaladas
 INSTALLED_APPS = [
     'django.contrib.admin',
