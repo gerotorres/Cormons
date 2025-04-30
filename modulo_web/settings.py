@@ -3,6 +3,7 @@ from pathlib import Path
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+ROOT_URLCONF = 'modulo_web.urls'
 
 # SECRET_KEY: se usará desde una variable de entorno en producción
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", 'django-insecure-6jjzn00rp26#_b6oa1yyea6s(q)g16p&!190)7ga9bee4e6881')
