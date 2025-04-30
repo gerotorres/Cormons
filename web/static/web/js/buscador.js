@@ -21,6 +21,10 @@ document.addEventListener('DOMContentLoaded', function() {
             tabCodigo.classList.remove('active');
             busquedaPorDescripcion = true;
             searchQuery.placeholder = "Ingrese descripción del producto...";
+            // Limpiar el campo de búsqueda al cambiar de pestaña
+            searchQuery.value = '';
+            // Enfocar el campo de búsqueda
+            searchQuery.focus();
         }
     });
     
@@ -30,6 +34,10 @@ document.addEventListener('DOMContentLoaded', function() {
             tabDescripcion.classList.remove('active');
             busquedaPorDescripcion = false;
             searchQuery.placeholder = "Ingrese código del producto...";
+            // Limpiar el campo de búsqueda al cambiar de pestaña
+            searchQuery.value = '';
+            // Enfocar el campo de búsqueda
+            searchQuery.focus();
         }
     });
     
@@ -47,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
         buscarProductos(query, busquedaPorDescripcion ? 'descripcion' : 'codigo');
     });
     
-    // Funcionalidad del botón de cámara (simulación)
+    // Funcionalidad del botón de cámara 
     document.getElementById('camera-btn').addEventListener('click', function() {
         mostrarMensaje("Funcionalidad de escaneo de código de barras no disponible en esta versión");
     });
@@ -213,6 +221,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Botón CORMONS (simulación)
     document.getElementById('cormons-btn').addEventListener('click', function() {
         mostrarMensaje("Funcionalidad CORMONS iniciada");
+    });
+    
+    // Agregar funcionalidad para limpiar búsqueda con botón X
+    document.getElementById('clear-search').addEventListener('click', function() {
+        searchQuery.value = '';
+        searchQuery.focus();
     });
 });
 

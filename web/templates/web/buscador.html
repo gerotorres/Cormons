@@ -1,4 +1,4 @@
-<!-- web/templates/web/buscador.html -->
+<!-- web/templates/web/buscador.html modificado -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
@@ -54,7 +54,7 @@
                     display: none; /* Ocultar el botón directo en móviles para ahorrar espacio */
                 }
             }
-            </style>
+        </style>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -69,16 +69,25 @@
                 
                 <form id="search-form" class="search-form">
                     <div class="search-input-group">
-                        <input 
-                            type="text" 
-                            id="search-query" 
-                            class="search-input" 
-                            placeholder="Ingrese descripción del producto..." 
-                            autocomplete="off">
-                        <button type="button" id="camera-btn" class="camera-button">
-                            <i class="fas fa-camera"></i>
-                        </button>
+                        <div class="search-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="search-query" 
+                                class="search-input" 
+                                placeholder="Ingrese descripción del producto..." 
+                                autocomplete="off">
+                            <button type="button" id="clear-search" class="clear-search-button">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="barcode-scanner-container">
+                            <button type="button" id="camera-btn" class="barcode-scanner-button">
+                                <i class="fas fa-barcode"></i>
+                            </button>
+                        </div>
                     </div>
+                    
                     <button type="submit" class="search-button">
                         <i class="fas fa-search"></i> Buscar
                     </button>
