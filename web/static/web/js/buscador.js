@@ -150,42 +150,46 @@ document.addEventListener('DOMContentLoaded', function() {
         // Antes de iniciar Quagga, limpiamos el contenedor
         scannerViewport.innerHTML = '';
         
-        // Configuración de Quagga
+        // Configuración de Quagga optimizada para mejor reconocimiento
         Quagga.init({
             inputStream: {
                 name: "Live",
                 type: "LiveStream",
                 target: scannerViewport,
                 constraints: {
-                    width: { min: 640 },
-                    height: { min: 480 },
-                    aspectRatio: { min: 1, max: 2 },
-                    facingMode: "environment" // Usar cámara trasera en dispositivos móviles
+                    width: { min: 800 },
+                    height: { min: 600 },
+                    facingMode: "environment", // Usar cámara trasera en dispositivos móviles
+                    aspectRatio: { min: 1, max: 2 }
                 },
-                area: { // Definir un área de escaneo más pequeña puede mejorar el rendimiento
-                    top: "25%",    // Parte superior de la región de escaneo
-                    right: "10%",  // Margen derecho
-                    left: "10%",   // Margen izquierdo
-                    bottom: "25%", // Parte inferior
+                area: { // Define un área más pequeña para mejorar la precisión
+                    top: "30%",    
+                    right: "20%",  
+                    left: "20%",   
+                    bottom: "30%", 
                 },
+                singleChannel: false // true para cámaras de baja calidad
             },
             locator: {
                 patchSize: "medium",
                 halfSample: true
             },
-            numOfWorkers: navigator.hardwareConcurrency || 4,
+            numOfWorkers: 4,
+            frequency: 10, // Aumenta la frecuencia de escaneo
             decoder: {
                 readers: [
-                    "code_128_reader",
+                    // Prioriza los formatos más comunes (orden es importante)
                     "ean_reader",
                     "ean_8_reader",
+                    "code_128_reader",
                     "code_39_reader",
                     "code_39_vin_reader",
-                    "codabar_reader",
                     "upc_reader",
                     "upc_e_reader",
+                    "codabar_reader",
                     "i2of5_reader"
                 ],
+                multiple: false, // Solo detecta un código a la vez
                 debug: {
                     showCanvas: true,
                     showPatches: true,
@@ -211,74 +215,98 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             console.log("Quagga inicializado correctamente");
-            // Iniciar Quagga
             Quagga.start();
             scanner = Quagga;
             
-            scanningStatus.textContent = "Escaneando... Apunte al código de barras.";
+            scanningStatus.textContent = "Escaneando... Alinee el código de barras en el centro";
             scanningStatus.className = "fw-medium text-primary text-scanning";
         });
         
+        // Variables para mejorar la precisión
+        let lastResult = null;
+        let countSameResult = 0;
+        const requiredConsistency = 3; // Necesitamos detectar el mismo código X veces seguidas
+        
         // Evento para detectar códigos de barras
         Quagga.onDetected(function(result) {
-            // Validar el código (opcional)
             const code = result.codeResult.code;
-            if (!code || code.length < 3) {
-                console.log("Código inválido detectado:", code);
-                return; // Ignorar códigos muy cortos (probablemente falsos positivos)
+            const format = result.codeResult.format;
+            
+            // Validación básica del código
+            if (!code || code.length < 4) {
+                console.log("Código inválido o muy corto detectado:", code);
+                return; // Ignorar códigos muy cortos
             }
             
-            console.log("Código detectado:", code);
+            console.log(`Código detectado: ${code} (formato: ${format}, calidad: ${result.codeResult.confidence.toFixed(2)})`);
             
-            // Reproducir un sonido de éxito (opcional)
-            try {
-                const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
-                beepSound.play().catch(e => console.log("No se pudo reproducir el sonido", e));
-            } catch (e) {
-                console.log("Error al reproducir sonido:", e);
+            // Filtramos resultados de baja calidad
+            if (result.codeResult.confidence < 0.70) {
+                console.log("Confianza baja, ignorando detección");
+                return;
             }
             
-            // Mostrar el código detectado
-            scanningStatus.textContent = `Código detectado: ${code}`;
-            scanningStatus.className = "fw-medium text-success";
-            
-            // Detener el escáner
-            detenerEscaner();
-            
-            // Cerrar el modal después de un breve retraso
-            setTimeout(function() {
-                // Verificar si bootstrap está disponible
-                if (typeof bootstrap !== 'undefined') {
-                    const scannerModal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
-                    if (scannerModal) {
-                        scannerModal.hide();
+            // Necesitamos detectar el mismo código varias veces para confirmar
+            if (code === lastResult) {
+                countSameResult++;
+                
+                // Actualizar el estatus para mostrar el progreso
+                scanningStatus.textContent = `Verificando código: ${code} (${countSameResult}/${requiredConsistency})`;
+                
+                if (countSameResult >= requiredConsistency) {
+                    // Reproducir un sonido de éxito
+                    try {
+                        const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
+                        beepSound.play().catch(e => console.log("No se pudo reproducir el sonido", e));
+                    } catch (e) {
+                        console.log("Error al reproducir sonido:", e);
                     }
-                } else {
-                    // Fallback manual
-                    const modal = document.getElementById('scannerModal');
-                    const backdrop = document.querySelector('.modal-backdrop');
-                    cerrarModalManualmente(modal, backdrop);
+                    
+                    // Mostrar el código detectado
+                    scanningStatus.textContent = `Código confirmado: ${code} (${format})`;
+                    scanningStatus.className = "fw-medium text-success";
+                    
+                    // Detener el escáner
+                    detenerEscaner();
+                    
+                    // Cerrar el modal y buscar el código
+                    setTimeout(function() {
+                        if (typeof bootstrap !== 'undefined') {
+                            const scannerModal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
+                            if (scannerModal) {
+                                scannerModal.hide();
+                            }
+                        } else {
+                            const modal = document.getElementById('scannerModal');
+                            const backdrop = document.querySelector('.modal-backdrop');
+                            cerrarModalManualmente(modal, backdrop);
+                        }
+                        
+                        // Llenar el campo de búsqueda con el código escaneado
+                        searchQuery.value = code;
+                        
+                        // Asegurarse de que estamos en modo búsqueda por código
+                        if (busquedaPorDescripcion) {
+                            tabCodigo.click();
+                        }
+                        
+                        // Ejecutar la búsqueda automáticamente
+                        buscarProductos(code, 'codigo');
+                        
+                    }, 1000);
                 }
-                
-                // Llenar el campo de búsqueda con el código escaneado
-                searchQuery.value = code;
-                
-                // Asegurarse de que estamos en modo búsqueda por código
-                if (busquedaPorDescripcion) {
-                    tabCodigo.click();
-                }
-                
-                // Ejecutar la búsqueda automáticamente
-                buscarProductos(code, 'codigo');
-                
-            }, 1000);
+            } else {
+                // Reiniciar el contador si se detecta un código diferente
+                lastResult = code;
+                countSameResult = 1;
+            }
         });
         
-        // Opcional: mostrar cada frame procesado para debug
+        // Mostrar cada frame procesado para ayuda visual
         Quagga.onProcessed(function(result) {
             const drawingCtx = Quagga.canvas.ctx.overlay;
             const drawingCanvas = Quagga.canvas.dom.overlay;
-
+    
             if (result) {
                 if (result.boxes) {
                     drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
@@ -288,11 +316,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: "green", lineWidth: 2 });
                     });
                 }
-
+    
                 if (result.box) {
                     Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: "#00F", lineWidth: 2 });
                 }
-
+    
                 if (result.codeResult && result.codeResult.code) {
                     Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, { color: 'red', lineWidth: 3 });
                 }
