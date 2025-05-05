@@ -53,21 +53,43 @@ class BusquedaProductoAPIView(APIView):
 @csrf_exempt
 def cargar_datos_prueba(request):
     try:
-        # Capturar la salida del comando
-        out = io.StringIO()
-        sys.stdout = out
+        # Importar lo necesario
+        from api.models import Producto
+        import random
         
-        # Ejecutar el comando de management
-        call_command('crear_datos_prueba')
+        # Borrar datos existentes
+        Producto.objects.all().delete()
         
-        # Restaurar stdout
-        sys.stdout = sys.__stdout__
+        # Lista de productos de ejemplo
+        productos = [
+            {'codigo': 'A001', 'descripcion': 'Martillo profesional', 'stock': 45},
+            {'codigo': 'A002', 'descripcion': 'Destornillador Phillips', 'stock': 120},
+            {'codigo': '786896987', 'descripcion': 'Sierra circular 7"', 'stock': 18},
+        ]
         
-        # Obtener la salida
-        output = out.getvalue()
+        # Crear más productos ficticios
+        categorias = ['Herramientas', 'Electricidad', 'Plomería', 'Jardinería', 'Pintura']
+        items = ['Llave', 'Cable', 'Tubo', 'Pinza', 'Tornillo', 'Pala', 'Brocha', 'Cinta']
         
-        return HttpResponse(f"Comando ejecutado con éxito:<br><pre>{output}</pre>")
+        for i in range(1, 201):
+            codigo = f'P{i:04d}'
+            categoria = random.choice(categorias)
+            item = random.choice(items)
+            descripcion = f'{categoria} - {item} {i}'
+            stock = random.randint(0, 200)
+            
+            productos.append({
+                'codigo': codigo,
+                'descripcion': descripcion,
+                'stock': stock
+            })
+        
+        # Crear los productos
+        for producto_data in productos:
+            Producto.objects.create(**producto_data)
+            
+        return HttpResponse(f'Se crearon {len(productos)} productos de prueba')
     except Exception as e:
         import traceback
         error_traceback = traceback.format_exc()
-        return HttpResponse(f"Error al ejecutar el comando: {str(e)}<br><pre>{error_traceback}</pre>")
+        return HttpResponse(f"Error al cargar datos: {str(e)}<br><pre>{error_traceback}</pre>")
