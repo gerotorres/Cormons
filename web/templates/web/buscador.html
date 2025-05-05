@@ -8,7 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="{% static 'web/js/buscador.js' %}"></script>
     <link rel="stylesheet" href="{% static 'web/css/styles.css' %}">
 </head>
@@ -143,26 +143,22 @@
 
     <!-- Modal para abrir la camara -->
     <div class="modal fade" id="scannerModal" tabindex="-1" aria-labelledby="scannerModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
           <div class="modal-content">
             <div class="modal-header bg-light py-2">
               <h5 class="modal-title" id="scannerModalLabel">Escanear Código de Barras</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-0">
-              <!-- Contenedor del escáner con proporción adaptable -->
-              <div class="ratio ratio-4x3 bg-dark">
-                <div id="scanner-viewport" class="w-100 h-100 overflow-hidden">
-                  <!-- Guía visual para centrar el código -->
-                  <div class="scanning-guide"></div>
-                </div>
-              </div>
-              <!-- Instrucciones más claras -->
-              <div class="p-2 text-center bg-light">
-                <div id="scanning-status" class="fw-medium text-primary">
+              <!-- Contenedor para el escáner Html5-QRCode (reemplaza el anterior) -->
+              <div id="reader" class="w-100"></div>
+              
+              <!-- Instrucciones y estado -->
+              <div class="p-3 text-center">
+                <div id="scanning-status" class="fw-medium text-primary mb-1">
                   Iniciando cámara...
                 </div>
-                <small class="text-muted d-block mt-1">Mantenga el dispositivo estable.</small>
+                <small class="text-muted d-block">Centre el código de barras en la cámara</small>
               </div>
             </div>
             <div class="modal-footer py-2">

@@ -178,59 +178,59 @@ main {
   100% { opacity: 0.5; }
 }
 
-#scanner-viewport {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
-  background-color: #000;
+/* Estilos para Html5-QRCode */
+
+/* Contenedor principal del escáner */
+#reader {
+  width: 100% !important;
+  min-height: 400px !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
-#scanner-viewport video, 
-#scanner-viewport canvas {
-  width: 100% !important;    /* Forzar ancho completo */
-  height: 100% !important;   /* Forzar altura completa */
-  object-fit: cover;         /* Cubrir todo el espacio disponible */
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-/* Hacer el modal más grande en iPhones */
+/* Mejoras para dispositivos móviles */
 @media (max-width: 767px) {
-  .modal-dialog {
+  #reader {
+    min-height: 350px !important;
+  }
+
+  #reader video {
+    max-height: 70vh !important;
+    object-fit: cover !important;
+  }
+  
+  /* Mejorar selección de cámara */
+  #reader select {
+    max-width: 100% !important;
+    margin: 10px auto !important;
+    font-size: 16px !important; /* Evita zoom en iOS */
+  }
+  
+  #reader__scan_region {
+    margin-bottom: 10px !important;
+  }
+  
+  /* Modal más grande en móviles */
+  .modal-dialog.modal-lg {
     max-width: 95%;
     margin: 10px auto;
-    height: 80vh;
-  }
-  
-  .ratio-4x3 {
-    /* Más altura para la cámara */
-    padding-bottom: 80%;
-  }
-  
-  #scanning-status {
-    font-size: 1.1rem;
-    padding: 15px 5px;
-  }
-  
-  /* Guía visual para ayudar a centrar el código */
-  .scanning-guide {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 70%;
-    height: 25%;
-    border: 2px dashed rgba(255, 255, 255, 0.5);
-    border-radius: 10px;
-    pointer-events: none;
-    z-index: 10;
   }
 }
 
-/* Animación de pulso para el texto de escaneo */
-.text-scanning {
+/* Mejoras estéticas para la UI de Html5-QRCode */
+#reader__scan_region {
+  background-color: #f8f9fa !important;
+  padding: 10px !important;
+}
+
+#reader__dashboard_section_swaplink {
+  color: var(--primary-color) !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+}
+
+/* Estado del escaneo */
+.scanning-active {
   animation: pulse 1.5s infinite;
 }
 

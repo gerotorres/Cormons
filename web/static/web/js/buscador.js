@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearSearchBtn = document.getElementById('clear-search');
     const cameraBtn = document.getElementById('camera-btn');
     
-    // Variables para el escáner
-    let scanner = null;
+    // Variables para el escáner (ahora usando Html5QrCode)
+    let html5QrScanner = null;
     
     // Estado de la aplicación 
     let busquedaPorDescripcion = false;
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Iniciar el escáner una vez que el modal esté visible
             scannerModalEl.addEventListener('shown.bs.modal', function() {
-                iniciarEscaner();
+                iniciarHtml5QrScanner();
             });
             
             // Detener el escáner cuando se cierre el modal
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.appendChild(backdrop);
             
             // Iniciar el escáner inmediatamente
-            setTimeout(iniciarEscaner, 500);
+            setTimeout(iniciarHtml5QrScanner, 500);
             
             // Manejar el cierre del modal
             const closeButtons = scannerModalEl.querySelectorAll('[data-bs-dismiss="modal"]');
@@ -138,154 +138,122 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Función para iniciar el escáner de códigos de barras
-    // Función mejorada para iPhones con problemas de reconocimiento
-function iniciarEscaner() {
-    const scannerViewport = document.getElementById('scanner-viewport');
-    const scanningStatus = document.getElementById('scanning-status');
-    
-    // Mostrar mensaje de inicialización
-    scanningStatus.textContent = "Iniciando cámara...";
-    scanningStatus.className = "fw-medium text-primary";
-    
-    // Antes de iniciar Quagga, limpiamos el contenedor
-    scannerViewport.innerHTML = '';
-    
-    // Configuración optimizada para iPhone
-    Quagga.init({
-        inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: scannerViewport,
-            constraints: {
-                // Valores óptimos para iPhone
-                width: { min: 1280 },
-                height: { min: 720 },
-                facingMode: "environment",
-                // Sin restricción de aspect ratio para permitir el formato de iPhone
-                aspectRatio: undefined
-            },
-            // Sin área de restricción para aprovechar toda la pantalla
-            area: undefined
-        },
-        locator: {
-            patchSize: "large", // Aumentamos el tamaño del patch
-            halfSample: false   // Desactivamos half sample para mejor precisión
-        },
-        numOfWorkers: 2,      // Menos workers pero más enfocados
-        frequency: 5,         // Menor frecuencia para procesamiento más detallado
-        decoder: {
-            readers: [
-                // Lista simplificada de los formatos más comunes
-                "ean_reader",
-                "code_128_reader",
-                "code_39_reader",
-                "upc_reader"
-            ],
-            multiple: false
-        },
-        locate: true
-    }, function(err) {
-        if (err) {
-            console.error("Error al iniciar Quagga:", err);
-            scanningStatus.textContent = "Error al iniciar la cámara: " + (err.message || err);
-            scanningStatus.className = "fw-medium text-danger";
-            return;
-        }
-        
-        console.log("Quagga inicializado correctamente");
-        Quagga.start();
-        scanner = Quagga;
-        
-        scanningStatus.textContent = "Mantenga el código centrado y a unos 15cm de la cámara";
+    // Nueva función para iniciar el escáner usando Html5-QRCode
+    function iniciarHtml5QrScanner() {
+        const scanningStatus = document.getElementById('scanning-status');
+        scanningStatus.textContent = "Iniciando cámara...";
         scanningStatus.className = "fw-medium text-primary";
-    });
-    
-    // Evento para detectar códigos de barras - sin verificación múltiple
-    Quagga.onDetected(function(result) {
-        const code = result.codeResult.code;
-        const format = result.codeResult.format;
         
-        // Validación mínima del código
-        if (!code || code.length < 3) {
-            return; // Ignorar códigos demasiado cortos
-        }
+        // El contenedor del escáner
+        const readerDiv = document.getElementById('reader');
         
-        console.log(`Código detectado: ${code} (formato: ${format})`);
+        // Configuración optimizada para smartphones
+        const config = {
+            fps: 10,                       // Menor frames para mejor procesamiento
+            qrbox: { width: 250, height: 150 }, // Área de escaneo para códigos de barras
+            rememberLastUsedCamera: true,  // Recordar última cámara
+            aspectRatio: 1.0,              // Relación de aspecto cuadrada (mejor para códigos de barras)
+            showTorchButtonIfSupported: true, // Mostrar botón de linterna si está disponible
+            formatsToSupport: [            // Formatos de códigos de barras a soportar
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.CODABAR
+            ]
+        };
         
-        // Reproducir un sonido de éxito
-        try {
-            const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
-            beepSound.play().catch(e => console.log("No se pudo reproducir el sonido", e));
-        } catch (e) {
-            console.log("Error al reproducir sonido:", e);
-        }
+        // Crear instancia del escáner
+        html5QrScanner = new Html5Qrcode("reader");
         
-        // Mostrar el código detectado
-        scanningStatus.textContent = `Código detectado: ${code}`;
-        scanningStatus.className = "fw-medium text-success";
-        
-        // Detener el escáner
-        detenerEscaner();
-        
-        // Cerrar el modal y buscar el código
-        setTimeout(function() {
-            if (typeof bootstrap !== 'undefined') {
-                const scannerModal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
-                if (scannerModal) {
-                    scannerModal.hide();
+        // Función para manejar un escaneo exitoso
+        const onScanSuccess = (decodedText, decodedResult) => {
+            // Validación básica del código
+            if (!decodedText || decodedText.length < 4) {
+                console.log("Código inválido detectado:", decodedText);
+                return; // Ignorar códigos muy cortos
+            }
+            
+            console.log(`Código detectado: ${decodedText} (formato: ${decodedResult.result.format ? decodedResult.result.format.formatName : 'desconocido'})`);
+            
+            // Reproducir un sonido de éxito (opcional)
+            try {
+                const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
+                beepSound.play().catch(e => console.log("No se pudo reproducir el sonido", e));
+            } catch (e) {
+                console.log("Error al reproducir sonido:", e);
+            }
+            
+            // Mostrar el código detectado
+            scanningStatus.textContent = `Código detectado: ${decodedText}`;
+            scanningStatus.className = "fw-medium text-success";
+            
+            // Detener el escáner
+            detenerEscaner();
+            
+            // Cerrar el modal después de un breve retraso
+            setTimeout(function() {
+                if (typeof bootstrap !== 'undefined') {
+                    const scannerModal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
+                    if (scannerModal) {
+                        scannerModal.hide();
+                    }
+                } else {
+                    const modal = document.getElementById('scannerModal');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    cerrarModalManualmente(modal, backdrop);
                 }
-            } else {
-                const modal = document.getElementById('scannerModal');
-                const backdrop = document.querySelector('.modal-backdrop');
-                cerrarModalManualmente(modal, backdrop);
+                
+                // Llenar el campo de búsqueda con el código escaneado
+                searchQuery.value = decodedText;
+                
+                // Asegurarse de que estamos en modo búsqueda por código
+                if (busquedaPorDescripcion) {
+                    tabCodigo.click();
+                }
+                
+                // Ejecutar la búsqueda automáticamente
+                buscarProductos(decodedText, 'codigo');
+                
+            }, 1000);
+        };
+        
+        // Función para manejar errores
+        const onScanFailure = (error) => {
+            // Solo para errores reales, no para escaneos fallidos normales
+            if (error !== "No QR code found.") {
+                console.warn(`Error al escanear: ${error}`);
             }
-            
-            // Llenar el campo de búsqueda con el código escaneado
-            searchQuery.value = code;
-            
-            // Asegurarse de que estamos en modo búsqueda por código
-            if (busquedaPorDescripcion) {
-                tabCodigo.click();
-            }
-            
-            // Ejecutar la búsqueda automáticamente
-            buscarProductos(code, 'codigo');
-            
-        }, 1000);
-    });
-    
-    // Código para ayudar a visualizar lo que se está detectando
-    Quagga.onProcessed(function(result) {
-        const drawingCtx = Quagga.canvas.ctx.overlay;
-        const drawingCanvas = Quagga.canvas.dom.overlay;
-
-        if (result) {
-            if (result.boxes) {
-                drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
-                result.boxes.filter(function(box) {
-                    return box !== result.box;
-                }).forEach(function(box) {
-                    Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: "green", lineWidth: 2 });
-                });
-            }
-
-            if (result.box) {
-                Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: "#00F", lineWidth: 2 });
-            }
-
-            if (result.codeResult && result.codeResult.code) {
-                Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, { color: 'red', lineWidth: 3 });
-            }
-        }
-    });
-}
+        };
+        
+        // Iniciar la cámara en modo escaner
+        html5QrScanner.start(
+            { facingMode: "environment" }, // Preferir cámara trasera
+            config,
+            onScanSuccess,
+            onScanFailure
+        ).then(() => {
+            scanningStatus.textContent = "Centre el código de barras en el recuadro";
+            scanningStatus.className = "fw-medium text-primary scanning-active";
+        }).catch((err) => {
+            scanningStatus.textContent = `Error: ${err}. Intente nuevamente o ingrese el código manualmente.`;
+            scanningStatus.className = "fw-medium text-danger";
+            console.error("Error al iniciar la cámara:", err);
+        });
+    }
     
     // Función para detener el escáner
     function detenerEscaner() {
-        if (scanner) {
-            scanner.stop();
-            scanner = null;
+        if (html5QrScanner && html5QrScanner.isScanning) {
+            try {
+                html5QrScanner.stop().catch(err => {
+                    console.error("Error al detener el escáner:", err);
+                });
+            } catch (err) {
+                console.error("Error al intentar detener el escáner:", err);
+            }
         }
     }
     
