@@ -176,50 +176,51 @@ document.addEventListener('DOMContentLoaded', function() {
                 return; // Ignorar códigos muy cortos
             }
             
-            console.log(`Código detectado: ${decodedText} (formato: ${decodedResult.result.format ? decodedResult.result.format.formatName : 'desconocido'})`);
-            
-            // Reproducir un sonido de éxito (opcional)
-            try {
-                const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
-                beepSound.play().catch(e => console.log("No se pudo reproducir el sonido", e));
-            } catch (e) {
-                console.log("Error al reproducir sonido:", e);
-            }
-            
-            // Mostrar el código detectado
-            scanningStatus.textContent = `Código detectado: ${decodedText}`;
-            scanningStatus.className = "fw-medium text-success";
-            
-            // Detener el escáner
-            detenerEscaner();
-            
-            // Cerrar el modal después de un breve retraso
-            setTimeout(function() {
-                if (typeof bootstrap !== 'undefined') {
-                    const scannerModal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
-                    if (scannerModal) {
-                        scannerModal.hide();
+            // Importante: Detener el escáner inmediatamente para evitar escaneos múltiples
+            html5QrScanner.stop().then(() => {
+                console.log(`Código detectado: ${decodedText} (formato: ${decodedResult.result.format ? decodedResult.result.format.formatName : 'desconocido'})`);
+                
+                // Reproducir un sonido de éxito (opcional)
+                try {
+                    const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
+                    beepSound.play().catch(e => console.log("No se pudo reproducir el sonido", e));
+                } catch (e) {
+                    console.log("Error al reproducir sonido:", e);
+                }
+                
+                // Mostrar el código detectado
+                scanningStatus.textContent = `Código detectado: ${decodedText}`;
+                scanningStatus.className = "fw-medium text-success";
+                
+                // Cerrar el modal después de un breve retraso
+                setTimeout(function() {
+                    if (typeof bootstrap !== 'undefined') {
+                        const scannerModal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
+                        if (scannerModal) {
+                            scannerModal.hide();
+                        }
+                    } else {
+                        const modal = document.getElementById('scannerModal');
+                        const backdrop = document.querySelector('.modal-backdrop');
+                        cerrarModalManualmente(modal, backdrop);
                     }
-                } else {
-                    const modal = document.getElementById('scannerModal');
-                    const backdrop = document.querySelector('.modal-backdrop');
-                    cerrarModalManualmente(modal, backdrop);
-                }
-                
-                // Llenar el campo de búsqueda con el código escaneado
-                searchQuery.value = decodedText;
-                
-                // Asegurarse de que estamos en modo búsqueda por código
-                if (busquedaPorDescripcion) {
-                    tabCodigo.click();
-                }
-                
-                // Ejecutar la búsqueda automáticamente
-                buscarProductos(decodedText, 'codigo');
-                
-            }, 1000);
+                    
+                    // Llenar el campo de búsqueda con el código escaneado
+                    searchQuery.value = decodedText;
+                    
+                    // Asegurarse de que estamos en modo búsqueda por código
+                    if (busquedaPorDescripcion) {
+                        tabCodigo.click();
+                    }
+                    
+                    // Ejecutar la búsqueda UNA SOLA VEZ
+                    buscarProductos(decodedText, 'codigo');
+                    
+                }, 1000);
+            }).catch(err => {
+                console.error("Error al detener el escáner:", err);
+            });
         };
-        
         // Función para manejar errores
         const onScanFailure = (error) => {
             // Solo para errores reales, no para escaneos fallidos normales
@@ -259,6 +260,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Función para buscar productos
     function buscarProductos(query, tipo) {
+        // Variable para controlar si ya se está realizando una búsqueda
+        if (window.busquedaEnProceso) {
+            console.log('Búsqueda ya en proceso, ignorando nueva solicitud');
+            return;
+        }
+        
+        window.busquedaEnProceso = true;
         console.log('Buscando productos:', query, 'tipo:', tipo); 
         
         // Guardar la consulta actual
@@ -277,10 +285,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(data => {
                     mostrarResultados(data);
+                    window.busquedaEnProceso = false; // Restablecer la bandera
                 })
                 .catch(error => {
                     mostrarMensaje(`Error: ${error.message}. Por favor intente nuevamente.`);
-                    console.error('Error en la búsqueda:', error); 
+                    console.error('Error en la búsqueda:', error);
+                    window.busquedaEnProceso = false; // Restablecer la bandera incluso en caso de error
                 });
         }, 500);
     }
