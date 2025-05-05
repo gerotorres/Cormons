@@ -6,7 +6,6 @@ from .serializers import ProductoSerializer
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.admin.views.decorators.staff_member_required import staff_member_required
 import subprocess
 import os
 
