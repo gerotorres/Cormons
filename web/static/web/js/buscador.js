@@ -10,35 +10,57 @@ document.addEventListener('DOMContentLoaded', function() {
     const productListTemplate = document.getElementById('product-list-template');
     const loadingTemplate = document.getElementById('loading-template');
     const messageTemplate = document.getElementById('message-template');
+    const clearSearchBtn = document.getElementById('clear-search');
+    const cameraBtn = document.getElementById('camera-btn');
     
-    // Estado de la aplicación
-    let busquedaPorDescripcion = true;
+    // Variables para el escáner
+    let scanner = null;
     
-    // Alternar entre pestañas de búsqueda
+    // Estado de la aplicación 
+    let busquedaPorDescripcion = false;
+    
+    if (!tabCodigo.classList.contains('active')) {
+        tabCodigo.classList.add('active');
+        tabDescripcion.classList.remove('active');
+    }
+    
+    searchQuery.placeholder = "Ingrese código del producto...";
+    
+    // Alterna entre pestañas de búsqueda
     tabDescripcion.addEventListener('click', function() {
-        if (!tabDescripcion.classList.contains('active')) {
-            tabDescripcion.classList.add('active');
-            tabCodigo.classList.remove('active');
-            busquedaPorDescripcion = true;
-            searchQuery.placeholder = "Ingrese descripción del producto...";
-            // Limpiar el campo de búsqueda al cambiar de pestaña
-            searchQuery.value = '';
-            // Enfocar el campo de búsqueda
-            searchQuery.focus();
-        }
+        document.querySelectorAll('.nav-link').forEach(tab => {
+            tab.classList.remove('active');
+            tab.classList.remove('sliding-in');
+        });
+        
+        tabDescripcion.classList.add('active');
+        tabDescripcion.classList.add('sliding-in');
+        
+        busquedaPorDescripcion = true;
+        searchQuery.placeholder = "Ingrese descripción del producto...";
+        
+        // Limpiar el campo de búsqueda al cambiar de pestaña
+        searchQuery.value = '';
+        // Enfocar el campo de búsqueda
+        searchQuery.focus();
     });
     
     tabCodigo.addEventListener('click', function() {
-        if (!tabCodigo.classList.contains('active')) {
-            tabCodigo.classList.add('active');
-            tabDescripcion.classList.remove('active');
-            busquedaPorDescripcion = false;
-            searchQuery.placeholder = "Ingrese código del producto...";
-            // Limpiar el campo de búsqueda al cambiar de pestaña
-            searchQuery.value = '';
-            // Enfocar el campo de búsqueda
-            searchQuery.focus();
-        }
+        document.querySelectorAll('.nav-link').forEach(tab => {
+            tab.classList.remove('active');
+            tab.classList.remove('sliding-in');
+        });
+        
+        tabCodigo.classList.add('active');
+        tabCodigo.classList.add('sliding-in');
+        
+        busquedaPorDescripcion = false;
+        searchQuery.placeholder = "Ingrese código del producto...";
+        
+        // Limpiar el campo de búsqueda al cambiar de pestaña
+        searchQuery.value = '';
+        // Enfocar el campo de búsqueda
+        searchQuery.focus();
     });
     
     // Manejo del formulario de búsqueda
@@ -55,21 +77,247 @@ document.addEventListener('DOMContentLoaded', function() {
         buscarProductos(query, busquedaPorDescripcion ? 'descripcion' : 'codigo');
     });
     
-    // Funcionalidad del botón de cámara 
-    document.getElementById('camera-btn').addEventListener('click', function() {
-        mostrarMensaje("Funcionalidad de escaneo de código de barras no disponible en esta versión");
+    // Funcionalidad del botón de código de barras
+    cameraBtn.addEventListener('click', function() {
+        // Verificar si el navegador soporta getUserMedia (acceso a la cámara)
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            mostrarMensaje("Su navegador no soporta acceso a la cámara. Por favor actualice su navegador o ingrese el código manualmente.");
+            return;
+        }
+        
+        // Obtener referencia al modal
+        const scannerModalEl = document.getElementById('scannerModal');
+        
+        // Verificar si bootstrap está disponible
+        if (typeof bootstrap !== 'undefined') {
+            // Usar la API de Bootstrap
+            const scannerModal = new bootstrap.Modal(scannerModalEl);
+            scannerModal.show();
+            
+            // Iniciar el escáner una vez que el modal esté visible
+            scannerModalEl.addEventListener('shown.bs.modal', function() {
+                iniciarEscaner();
+            });
+            
+            // Detener el escáner cuando se cierre el modal
+            scannerModalEl.addEventListener('hidden.bs.modal', function() {
+                detenerEscaner();
+            });
+        } else {
+            // Fallback para cuando Bootstrap JS no está disponible
+            scannerModalEl.style.display = 'block';
+            scannerModalEl.classList.add('show');
+            document.body.classList.add('modal-open');
+            
+            // Crear un backdrop manualmente
+            const backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+            
+            // Iniciar el escáner inmediatamente
+            setTimeout(iniciarEscaner, 500);
+            
+            // Manejar el cierre del modal
+            const closeButtons = scannerModalEl.querySelectorAll('[data-bs-dismiss="modal"]');
+            closeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    cerrarModalManualmente(scannerModalEl, backdrop);
+                });
+            });
+        }
     });
+    
+    // Función para cerrar el modal manualmente si Bootstrap JS no está disponible
+    function cerrarModalManualmente(modal, backdrop) {
+        detenerEscaner();
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        document.body.classList.remove('modal-open');
+        if (backdrop && backdrop.parentNode) {
+            backdrop.parentNode.removeChild(backdrop);
+        }
+    }
+    
+    // Función para iniciar el escáner de códigos de barras
+    function iniciarEscaner() {
+        const scannerViewport = document.getElementById('scanner-viewport');
+        const scanningStatus = document.getElementById('scanning-status');
+        
+        // Mostrar mensaje de inicialización
+        scanningStatus.textContent = "Iniciando cámara...";
+        scanningStatus.className = "fw-medium text-primary";
+        
+        // Antes de iniciar Quagga, limpiamos el contenedor
+        scannerViewport.innerHTML = '';
+        
+        // Configuración de Quagga
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: scannerViewport,
+                constraints: {
+                    width: { min: 640 },
+                    height: { min: 480 },
+                    aspectRatio: { min: 1, max: 2 },
+                    facingMode: "environment" // Usar cámara trasera en dispositivos móviles
+                },
+                area: { // Definir un área de escaneo más pequeña puede mejorar el rendimiento
+                    top: "25%",    // Parte superior de la región de escaneo
+                    right: "10%",  // Margen derecho
+                    left: "10%",   // Margen izquierdo
+                    bottom: "25%", // Parte inferior
+                },
+            },
+            locator: {
+                patchSize: "medium",
+                halfSample: true
+            },
+            numOfWorkers: navigator.hardwareConcurrency || 4,
+            decoder: {
+                readers: [
+                    "code_128_reader",
+                    "ean_reader",
+                    "ean_8_reader",
+                    "code_39_reader",
+                    "code_39_vin_reader",
+                    "codabar_reader",
+                    "upc_reader",
+                    "upc_e_reader",
+                    "i2of5_reader"
+                ],
+                debug: {
+                    showCanvas: true,
+                    showPatches: true,
+                    showFoundPatches: true,
+                    showSkeleton: true,
+                    showLabels: true,
+                    showPatchLabels: true,
+                    showRemainingPatchLabels: true,
+                    boxFromPatches: {
+                        showTransformed: true,
+                        showTransformedBox: true,
+                        showBB: true
+                    }
+                }
+            },
+            locate: true
+        }, function(err) {
+            if (err) {
+                console.error("Error al iniciar Quagga:", err);
+                scanningStatus.textContent = "Error al iniciar la cámara: " + (err.message || err);
+                scanningStatus.className = "fw-medium text-danger";
+                return;
+            }
+            
+            console.log("Quagga inicializado correctamente");
+            // Iniciar Quagga
+            Quagga.start();
+            scanner = Quagga;
+            
+            scanningStatus.textContent = "Escaneando... Apunte al código de barras.";
+            scanningStatus.className = "fw-medium text-primary text-scanning";
+        });
+        
+        // Evento para detectar códigos de barras
+        Quagga.onDetected(function(result) {
+            // Validar el código (opcional)
+            const code = result.codeResult.code;
+            if (!code || code.length < 3) {
+                console.log("Código inválido detectado:", code);
+                return; // Ignorar códigos muy cortos (probablemente falsos positivos)
+            }
+            
+            console.log("Código detectado:", code);
+            
+            // Reproducir un sonido de éxito (opcional)
+            try {
+                const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
+                beepSound.play().catch(e => console.log("No se pudo reproducir el sonido", e));
+            } catch (e) {
+                console.log("Error al reproducir sonido:", e);
+            }
+            
+            // Mostrar el código detectado
+            scanningStatus.textContent = `Código detectado: ${code}`;
+            scanningStatus.className = "fw-medium text-success";
+            
+            // Detener el escáner
+            detenerEscaner();
+            
+            // Cerrar el modal después de un breve retraso
+            setTimeout(function() {
+                // Verificar si bootstrap está disponible
+                if (typeof bootstrap !== 'undefined') {
+                    const scannerModal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
+                    if (scannerModal) {
+                        scannerModal.hide();
+                    }
+                } else {
+                    // Fallback manual
+                    const modal = document.getElementById('scannerModal');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    cerrarModalManualmente(modal, backdrop);
+                }
+                
+                // Llenar el campo de búsqueda con el código escaneado
+                searchQuery.value = code;
+                
+                // Asegurarse de que estamos en modo búsqueda por código
+                if (busquedaPorDescripcion) {
+                    tabCodigo.click();
+                }
+                
+                // Ejecutar la búsqueda automáticamente
+                buscarProductos(code, 'codigo');
+                
+            }, 1000);
+        });
+        
+        // Opcional: mostrar cada frame procesado para debug
+        Quagga.onProcessed(function(result) {
+            const drawingCtx = Quagga.canvas.ctx.overlay;
+            const drawingCanvas = Quagga.canvas.dom.overlay;
+
+            if (result) {
+                if (result.boxes) {
+                    drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
+                    result.boxes.filter(function(box) {
+                        return box !== result.box;
+                    }).forEach(function(box) {
+                        Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: "green", lineWidth: 2 });
+                    });
+                }
+
+                if (result.box) {
+                    Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: "#00F", lineWidth: 2 });
+                }
+
+                if (result.codeResult && result.codeResult.code) {
+                    Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, { color: 'red', lineWidth: 3 });
+                }
+            }
+        });
+    }
+    
+    // Función para detener el escáner
+    function detenerEscaner() {
+        if (scanner) {
+            scanner.stop();
+            scanner = null;
+        }
+    }
     
     // Función para buscar productos
     function buscarProductos(query, tipo) {
+        console.log('Buscando productos:', query, 'tipo:', tipo); 
+        
         // Guardar la consulta actual
         ultimaBusqueda.query = query;
         ultimaBusqueda.tipo = tipo;
         
-        // Mostrar indicador de carga
         mostrarCargando();
         
-        // Agregar un pequeño retraso para simular el tiempo de respuesta de la API real
         setTimeout(() => {
             fetch(`/api/buscar/?q=${encodeURIComponent(query)}&tipo=${tipo}`)
                 .then(response => {
@@ -83,6 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     mostrarMensaje(`Error: ${error.message}. Por favor intente nuevamente.`);
+                    console.error('Error en la búsqueda:', error); 
                 });
         }, 500);
     }
@@ -124,31 +373,38 @@ document.addEventListener('DOMContentLoaded', function() {
     function mostrarProductoUnico(producto) {
         const clone = singleProductTemplate.content.cloneNode(true);
         
-        // Llenar los datos
         clone.querySelector('.product-name').textContent = producto.descripcion;
         clone.querySelector('.product-code').textContent = producto.codigo;
         
-        // Formatear el stock con clases según su nivel
+        // Formatear el stock con clases (bajho, medio, alto)
         const stockElement = clone.querySelector('.product-stock');
         stockElement.textContent = producto.stock;
         
+        stockElement.classList.remove('stock-available', 'stock-low', 'stock-unavailable');
+        
         if (producto.stock <= 0) {
             stockElement.classList.add('stock-unavailable');
+            stockElement.textContent = producto.stock + ' (No disponible)';
         } else if (producto.stock < 10) {
             stockElement.classList.add('stock-low');
+            stockElement.textContent = producto.stock + ' (Stock bajo)';
         } else {
             stockElement.classList.add('stock-available');
+            stockElement.textContent = producto.stock + ' (Disponible)';
         }
+        
+        resultsContainer.classList.add('mb-5');
         
         // Agregar funcionalidad al botón de volver
         const backButton = clone.querySelector('#back-to-list');
         backButton.addEventListener('click', function() {
+            resultsContainer.classList.remove('mb-5');
+            
             // Si tenemos resultados previos, los mostramos
             if (ultimaBusqueda.resultados.length > 0) {
                 limpiarResultados();
                 mostrarListaProductos(ultimaBusqueda.resultados);
             } else {
-                // Si no hay lista previa, sugerimos hacer una nueva búsqueda
                 mostrarMensaje("No hay resultados previos disponibles. Realice una nueva búsqueda.");
             }
         });
@@ -199,53 +455,23 @@ document.addEventListener('DOMContentLoaded', function() {
     function mostrarMensaje(mensaje) {
         limpiarResultados();
         const clone = messageTemplate.content.cloneNode(true);
-        clone.querySelector('.message').textContent = mensaje;
+
+        clone.querySelector('.card-body').textContent = mensaje;
         resultsContainer.appendChild(clone);
     }
     
-    // Mostrar indicador de carga
     function mostrarCargando() {
         limpiarResultados();
         const clone = loadingTemplate.content.cloneNode(true);
         resultsContainer.appendChild(clone);
     }
     
-    // Limpiar resultados
     function limpiarResultados() {
         resultsContainer.innerHTML = '';
     }
     
+    mostrarMensaje("Ingrese un código para ver resultados");
+    
     // Enfoque en el input de búsqueda al cargar la página
     searchQuery.focus();
-    
-    // Botón CORMONS (simulación)
-    document.getElementById('cormons-btn').addEventListener('click', function() {
-        mostrarMensaje("Funcionalidad CORMONS iniciada");
-    });
-    
-    // Agregar funcionalidad para limpiar búsqueda con botón X
-    document.getElementById('clear-search').addEventListener('click', function() {
-        searchQuery.value = '';
-        searchQuery.focus();
-    });
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Toggle del menú de usuario
-    const userMenuToggle = document.getElementById('userMenuToggle');
-    const userDropdown = document.getElementById('userDropdown');
-
-    if (userMenuToggle && userDropdown) {
-        userMenuToggle.addEventListener('click', (event) => {
-            event.stopPropagation();
-            userDropdown.classList.toggle('active');
-        });
-
-        // Cerrar el menú si se hace clic fuera
-        document.addEventListener('click', (event) => {
-            if (!userMenuToggle.contains(event.target) && !userDropdown.contains(event.target)) {
-                userDropdown.classList.remove('active');
-            }
-        });
-    }
 });

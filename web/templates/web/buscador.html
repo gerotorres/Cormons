@@ -1,4 +1,3 @@
-<!-- web/templates/web/buscador.html modificado -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
@@ -6,156 +5,168 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscador de Productos</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script src="{% static 'web/js/buscador.js' %}"></script>
     <link rel="stylesheet" href="{% static 'web/css/styles.css' %}">
-    <!-- Google Fonts - Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
+<body class="bg-light">
+    <div class="container-fluid p-0 d-flex flex-column min-vh-100">
         <!-- Header -->
-        <header>
-            <div class="menu-icon">
-                <i class="fas fa-bars"></i>
-            </div>
-            <div class="logo">
-                Buscador de Productos
-            </div>
-            <div class="user-actions">
-                <div class="user-menu">
-                    <div class="user-icon" id="userMenuToggle">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="dropdown-menu" id="userDropdown">
-                        <div class="dropdown-header">
-                            <span class="username">{{ request.user.username }}</span>
-                        </div>
-                        <ul class="dropdown-list">
-                            <li><a href="#"><i class="fas fa-user-circle"></i> Perfil</a></li>
-                            <li><a href="#"><i class="fas fa-cog"></i> Configuración</a></li>
-                            <li class="dropdown-divider"></li>
-                            <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a></li>
-                        </ul>
-                    </div>
+        <header class="navbar fixed-top bg-white shadow-sm">
+            <div class="container-fluid">
+                <button class="btn btn-link text-dark p-2 rounded-circle d-flex align-items-center justify-content-center" type="button">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <div class="navbar-brand text-primary fw-bold mx-auto">
+                    Buscador de Productos
                 </div>
+                
+                <a href="{% url 'logout' %}" class="btn btn-danger btn-sm d-none d-md-inline-flex align-items-center ms-2 logout-button">
+                    <i class="fas fa-sign-out-alt me-1"></i> Salir
+                </a>
             </div>
         </header>
 
-        <style>
-            .user-actions {
-                display: flex;
-                align-items: center;
-            }
-            
-            @media (max-width: 640px) {
-                .logout-button {
-                    display: none; /* Ocultar el botón directo en móviles para ahorrar espacio */
-                }
-            }
-        </style>
-
         <!-- Main Content -->
-        <div class="main-content">
-            <!-- Search Section -->
-            <section class="search-container">
-                <h2 class="search-title">Consulta de Productos</h2>
-                
-                <div class="search-tabs">
-                    <div id="tab-descripcion" class="search-tab active">Búsqueda por descripción</div>
-                    <div id="tab-codigo" class="search-tab">Búsqueda por código</div>
-                </div>
-                
-                <form id="search-form" class="search-form">
-                    <div class="search-input-group">
-                        <div class="search-input-wrapper">
-                            <input 
-                                type="text" 
-                                id="search-query" 
-                                class="search-input" 
-                                placeholder="Ingrese descripción del producto..." 
-                                autocomplete="off">
-                            <button type="button" id="clear-search" class="clear-search-button">
-                                <i class="fas fa-times"></i>
+        <main class="flex-grow-1 mt-5 pt-3">
+            <div class="container" style="max-width: 800px;">
+                <section class="card shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-center align-items-center mb-4">
+                            <button type="button" id="camera-btn" class="btn btn-outline-light text-primary shadow-sm py-3" style="width: 300px; max-width: 75%;">
+                                <img src="{% static 'web/images/codigo_barras.png' %}" alt="Escanear código de barras" class="barcode-img">
                             </button>
                         </div>
                         
-                        <div class="barcode-scanner-container">
-                            <button type="button" id="camera-btn" class="barcode-scanner-button">
-                                <i class="fas fa-barcode"></i>
-                            </button>
-                        </div>
+                        <ul class="nav nav-tabs nav-fill rounded overflow-hidden bg-light shadow-sm mb-3 search-tabs" id="searchTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active fw-bold py-3" id="tab-codigo" data-bs-toggle="tab" type="button" role="tab">
+                                    Búsqueda por código
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link fw-bold py-3" id="tab-descripcion" data-bs-toggle="tab" type="button" role="tab">
+                                    Búsqueda por descripción
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <form id="search-form" class="d-flex">
+                            <div class="input-group">
+                                <input type="text" id="search-query" class="form-control" placeholder="Ingrese código del producto..." autocomplete="off">
+                                <button type="button" id="clear-search" class="btn-close position-absolute end-0 top-50 translate-middle-y me-3" aria-label="Clear search"></button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    
-                    <button type="submit" class="search-button">
-                        <i class="fas fa-search"></i> Buscar
-                    </button>
-                </form>
-            </section>
+                </section>
 
-            <!-- Results Section -->
-            <section id="results-container" class="results-container">
-                <div class="message">
-                    Ingrese un término de búsqueda para ver resultados
-                </div>
-            </section>
-        </div>
+                <section id="results-container" class="card shadow-sm mb-4">
+                    <div class="card-body p-4 text-center text-muted">
+                        Ingrese un código para ver resultados
+                    </div>
+                </section>
+            </div>
+        </main>
 
         <!-- Footer -->
-        <footer>
-            <button id="cormons-btn" class="action-button">CORMONS</button>
+        <footer class="bg-dark text-white text-center py-3 w-100">
+            <div class="fw-bold fs-5">CORMONS</div>
         </footer>
     </div>
 
     <!-- Templates -->
     <template id="loading-template">
-        <div class="loading">
-            <div class="loading-spinner"></div>
+        <div class="d-flex justify-content-center align-items-center min-h-200 text-muted p-4">
+            <div class="spinner-border text-primary me-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
             <span>Buscando productos...</span>
         </div>
     </template>
 
     <template id="single-product-template">
-        <div class="product-card">
-            <h3 class="product-name"></h3>
-            <div class="product-meta">
-                <div class="meta-item">
-                    <span class="meta-label">Código:</span>
-                    <span class="meta-value product-code"></span>
+        <div class="card border-start border-4 border-primary shadow-lg mb-4 product-card">
+            <div class="card-body p-4 p-md-5">
+                <h3 class="fw-bold fs-2 mb-4 border-bottom pb-3 text-primary product-name"></h3>
+                <div class="mt-4">
+                    <div class="row mb-3">
+                        <div class="col-12 col-md-3">
+                            <span class="fw-medium fs-5 text-muted">Código:</span>
+                        </div>
+                        <div class="col-12 col-md-9">
+                            <span class="product-code fs-5 ms-2"></span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12 col-md-3">
+                            <span class="fw-medium fs-5 text-muted">Stock:</span>
+                        </div>
+                        <div class="col-12 col-md-9">
+                            <span class="product-stock fs-5 ms-2 py-1 px-2 rounded"></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="meta-item">
-                    <span class="meta-label">Stock:</span>
-                    <span class="meta-value product-stock"></span>
-                </div>
+                <button class="btn btn-outline-primary mt-4 py-2 px-4 fs-5" id="back-to-list">
+                    <i class="fas fa-arrow-left me-2"></i> Volver a la lista
+                </button>
             </div>
-            <button class="back-button" id="back-to-list">
-                <i class="fas fa-arrow-left"></i> Volver a la lista
-            </button>
         </div>
     </template>
 
     <template id="product-list-template">
-        <div class="products-table-container">
-            <table class="products-table">
-                <thead>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="bg-light">
                     <tr>
-                        <th>Código</th>
-                        <th>Descripción</th>
-                        <th>Stock</th>
+                        <th class="fw-semibold">Código</th>
+                        <th class="fw-semibold">Descripción</th>
+                        <th class="fw-semibold">Stock</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Las filas se agregarán dinámicamente -->
+                    <!-- Las filas se agregan dinámicamente -->
                 </tbody>
             </table>
         </div>
     </template>
 
     <template id="message-template">
-        <div class="message"></div>
+        <div class="card-body p-4 text-center text-muted"></div>
     </template>
 
-    <script src="{% static 'web/js/buscador.js' %}"></script>
+    <!-- Modal para abrir la camara -->
+    <div class="modal fade" id="scannerModal" tabindex="-1" aria-labelledby="scannerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-light">
+              <h5 class="modal-title" id="scannerModalLabel">Escanear Código de Barras</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+              <!-- Contenedor del escáner con proporción 4:3 -->
+              <div class="ratio ratio-4x3 bg-dark">
+                <div id="scanner-viewport" class="w-100 h-100 overflow-hidden"></div>
+              </div>
+              <!-- Barra de estado del escaneo -->
+              <div class="p-3 text-center">
+                <div id="scanning-status" class="fw-medium text-primary">
+                  Iniciando cámara...
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+ 
 </body>
 </html>
