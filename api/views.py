@@ -6,8 +6,9 @@ from .serializers import ProductoSerializer
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-import subprocess
-import os
+from django.core.management import call_command
+from django.utils.six import StringIO
+import sys
 
 class BusquedaProductoAPIView(APIView):
     def get(self, request):
@@ -52,11 +53,21 @@ class BusquedaProductoAPIView(APIView):
 @csrf_exempt
 def cargar_datos_prueba(request):
     try:
-        # Obtener la ruta absoluta del script
-        script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'crear_datos_prueba.py')
+        # Capturar la salida del comando
+        out = StringIO()
+        sys.stdout = out
         
-        # Ejecuta el script
-        subprocess.run(['python', script_path], check=True)
-        return HttpResponse("Datos de prueba cargados correctamente")
+        # Ejecutar el comando de management
+        call_command('crear_datos_prueba')
+        
+        # Restaurar stdout
+        sys.stdout = sys.__stdout__
+        
+        # Obtener la salida
+        output = out.getvalue()
+        
+        return HttpResponse(f"Comando ejecutado con éxito:<br><pre>{output}</pre>")
     except Exception as e:
-        return HttpResponse(f"Error al cargar datos: {str(e)}")
+        import traceback
+        error_traceback = traceback.format_exc()
+        return HttpResponse(f"Error al ejecutar el comando: {str(e)}<br><pre>{error_traceback}</pre>")
