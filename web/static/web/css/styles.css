@@ -178,3 +178,64 @@ main {
   100% { opacity: 0.5; }
 }
 
+#scanner-viewport {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+}
+
+#scanner-viewport video, 
+#scanner-viewport canvas {
+  width: 100% !important;    /* Forzar ancho completo */
+  height: 100% !important;   /* Forzar altura completa */
+  object-fit: cover;         /* Cubrir todo el espacio disponible */
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Hacer el modal más grande en iPhones */
+@media (max-width: 767px) {
+  .modal-dialog {
+    max-width: 95%;
+    margin: 10px auto;
+    height: 80vh;
+  }
+  
+  .ratio-4x3 {
+    /* Más altura para la cámara */
+    padding-bottom: 80%;
+  }
+  
+  #scanning-status {
+    font-size: 1.1rem;
+    padding: 15px 5px;
+  }
+  
+  /* Guía visual para ayudar a centrar el código */
+  .scanning-guide {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    height: 25%;
+    border: 2px dashed rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    pointer-events: none;
+    z-index: 10;
+  }
+}
+
+/* Animación de pulso para el texto de escaneo */
+.text-scanning {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}

@@ -139,194 +139,147 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Función para iniciar el escáner de códigos de barras
-    function iniciarEscaner() {
-        const scannerViewport = document.getElementById('scanner-viewport');
-        const scanningStatus = document.getElementById('scanning-status');
+    // Función mejorada para iPhones con problemas de reconocimiento
+function iniciarEscaner() {
+    const scannerViewport = document.getElementById('scanner-viewport');
+    const scanningStatus = document.getElementById('scanning-status');
+    
+    // Mostrar mensaje de inicialización
+    scanningStatus.textContent = "Iniciando cámara...";
+    scanningStatus.className = "fw-medium text-primary";
+    
+    // Antes de iniciar Quagga, limpiamos el contenedor
+    scannerViewport.innerHTML = '';
+    
+    // Configuración optimizada para iPhone
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: scannerViewport,
+            constraints: {
+                // Valores óptimos para iPhone
+                width: { min: 1280 },
+                height: { min: 720 },
+                facingMode: "environment",
+                // Sin restricción de aspect ratio para permitir el formato de iPhone
+                aspectRatio: undefined
+            },
+            // Sin área de restricción para aprovechar toda la pantalla
+            area: undefined
+        },
+        locator: {
+            patchSize: "large", // Aumentamos el tamaño del patch
+            halfSample: false   // Desactivamos half sample para mejor precisión
+        },
+        numOfWorkers: 2,      // Menos workers pero más enfocados
+        frequency: 5,         // Menor frecuencia para procesamiento más detallado
+        decoder: {
+            readers: [
+                // Lista simplificada de los formatos más comunes
+                "ean_reader",
+                "code_128_reader",
+                "code_39_reader",
+                "upc_reader"
+            ],
+            multiple: false
+        },
+        locate: true
+    }, function(err) {
+        if (err) {
+            console.error("Error al iniciar Quagga:", err);
+            scanningStatus.textContent = "Error al iniciar la cámara: " + (err.message || err);
+            scanningStatus.className = "fw-medium text-danger";
+            return;
+        }
         
-        // Mostrar mensaje de inicialización
-        scanningStatus.textContent = "Iniciando cámara...";
+        console.log("Quagga inicializado correctamente");
+        Quagga.start();
+        scanner = Quagga;
+        
+        scanningStatus.textContent = "Mantenga el código centrado y a unos 15cm de la cámara";
         scanningStatus.className = "fw-medium text-primary";
+    });
+    
+    // Evento para detectar códigos de barras - sin verificación múltiple
+    Quagga.onDetected(function(result) {
+        const code = result.codeResult.code;
+        const format = result.codeResult.format;
         
-        // Antes de iniciar Quagga, limpiamos el contenedor
-        scannerViewport.innerHTML = '';
+        // Validación mínima del código
+        if (!code || code.length < 3) {
+            return; // Ignorar códigos demasiado cortos
+        }
         
-        // Configuración de Quagga optimizada para mejor reconocimiento
-        Quagga.init({
-            inputStream: {
-                name: "Live",
-                type: "LiveStream",
-                target: scannerViewport,
-                constraints: {
-                    width: { min: 800 },
-                    height: { min: 600 },
-                    facingMode: "environment", // Usar cámara trasera en dispositivos móviles
-                    aspectRatio: { min: 1, max: 2 }
-                },
-                area: { // Define un área más pequeña para mejorar la precisión
-                    top: "30%",    
-                    right: "20%",  
-                    left: "20%",   
-                    bottom: "30%", 
-                },
-                singleChannel: false // true para cámaras de baja calidad
-            },
-            locator: {
-                patchSize: "medium",
-                halfSample: true
-            },
-            numOfWorkers: 4,
-            frequency: 10, // Aumenta la frecuencia de escaneo
-            decoder: {
-                readers: [
-                    // Prioriza los formatos más comunes (orden es importante)
-                    "ean_reader",
-                    "ean_8_reader",
-                    "code_128_reader",
-                    "code_39_reader",
-                    "code_39_vin_reader",
-                    "upc_reader",
-                    "upc_e_reader",
-                    "codabar_reader",
-                    "i2of5_reader"
-                ],
-                multiple: false, // Solo detecta un código a la vez
-                debug: {
-                    showCanvas: true,
-                    showPatches: true,
-                    showFoundPatches: true,
-                    showSkeleton: true,
-                    showLabels: true,
-                    showPatchLabels: true,
-                    showRemainingPatchLabels: true,
-                    boxFromPatches: {
-                        showTransformed: true,
-                        showTransformedBox: true,
-                        showBB: true
-                    }
-                }
-            },
-            locate: true
-        }, function(err) {
-            if (err) {
-                console.error("Error al iniciar Quagga:", err);
-                scanningStatus.textContent = "Error al iniciar la cámara: " + (err.message || err);
-                scanningStatus.className = "fw-medium text-danger";
-                return;
-            }
-            
-            console.log("Quagga inicializado correctamente");
-            Quagga.start();
-            scanner = Quagga;
-            
-            scanningStatus.textContent = "Escaneando... Alinee el código de barras en el centro";
-            scanningStatus.className = "fw-medium text-primary text-scanning";
-        });
+        console.log(`Código detectado: ${code} (formato: ${format})`);
         
-        // Variables para mejorar la precisión
-        let lastResult = null;
-        let countSameResult = 0;
-        const requiredConsistency = 3; // Necesitamos detectar el mismo código X veces seguidas
+        // Reproducir un sonido de éxito
+        try {
+            const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
+            beepSound.play().catch(e => console.log("No se pudo reproducir el sonido", e));
+        } catch (e) {
+            console.log("Error al reproducir sonido:", e);
+        }
         
-        // Evento para detectar códigos de barras
-        Quagga.onDetected(function(result) {
-            const code = result.codeResult.code;
-            const format = result.codeResult.format;
-            
-            // Validación básica del código
-            if (!code || code.length < 4) {
-                console.log("Código inválido o muy corto detectado:", code);
-                return; // Ignorar códigos muy cortos
-            }
-            
-            console.log(`Código detectado: ${code} (formato: ${format}, calidad: ${result.codeResult.confidence.toFixed(2)})`);
-            
-            // Filtramos resultados de baja calidad
-            if (result.codeResult.confidence < 0.70) {
-                console.log("Confianza baja, ignorando detección");
-                return;
-            }
-            
-            // Necesitamos detectar el mismo código varias veces para confirmar
-            if (code === lastResult) {
-                countSameResult++;
-                
-                // Actualizar el estatus para mostrar el progreso
-                scanningStatus.textContent = `Verificando código: ${code} (${countSameResult}/${requiredConsistency})`;
-                
-                if (countSameResult >= requiredConsistency) {
-                    // Reproducir un sonido de éxito
-                    try {
-                        const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
-                        beepSound.play().catch(e => console.log("No se pudo reproducir el sonido", e));
-                    } catch (e) {
-                        console.log("Error al reproducir sonido:", e);
-                    }
-                    
-                    // Mostrar el código detectado
-                    scanningStatus.textContent = `Código confirmado: ${code} (${format})`;
-                    scanningStatus.className = "fw-medium text-success";
-                    
-                    // Detener el escáner
-                    detenerEscaner();
-                    
-                    // Cerrar el modal y buscar el código
-                    setTimeout(function() {
-                        if (typeof bootstrap !== 'undefined') {
-                            const scannerModal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
-                            if (scannerModal) {
-                                scannerModal.hide();
-                            }
-                        } else {
-                            const modal = document.getElementById('scannerModal');
-                            const backdrop = document.querySelector('.modal-backdrop');
-                            cerrarModalManualmente(modal, backdrop);
-                        }
-                        
-                        // Llenar el campo de búsqueda con el código escaneado
-                        searchQuery.value = code;
-                        
-                        // Asegurarse de que estamos en modo búsqueda por código
-                        if (busquedaPorDescripcion) {
-                            tabCodigo.click();
-                        }
-                        
-                        // Ejecutar la búsqueda automáticamente
-                        buscarProductos(code, 'codigo');
-                        
-                    }, 1000);
+        // Mostrar el código detectado
+        scanningStatus.textContent = `Código detectado: ${code}`;
+        scanningStatus.className = "fw-medium text-success";
+        
+        // Detener el escáner
+        detenerEscaner();
+        
+        // Cerrar el modal y buscar el código
+        setTimeout(function() {
+            if (typeof bootstrap !== 'undefined') {
+                const scannerModal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
+                if (scannerModal) {
+                    scannerModal.hide();
                 }
             } else {
-                // Reiniciar el contador si se detecta un código diferente
-                lastResult = code;
-                countSameResult = 1;
+                const modal = document.getElementById('scannerModal');
+                const backdrop = document.querySelector('.modal-backdrop');
+                cerrarModalManualmente(modal, backdrop);
             }
-        });
-        
-        // Mostrar cada frame procesado para ayuda visual
-        Quagga.onProcessed(function(result) {
-            const drawingCtx = Quagga.canvas.ctx.overlay;
-            const drawingCanvas = Quagga.canvas.dom.overlay;
-    
-            if (result) {
-                if (result.boxes) {
-                    drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
-                    result.boxes.filter(function(box) {
-                        return box !== result.box;
-                    }).forEach(function(box) {
-                        Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: "green", lineWidth: 2 });
-                    });
-                }
-    
-                if (result.box) {
-                    Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: "#00F", lineWidth: 2 });
-                }
-    
-                if (result.codeResult && result.codeResult.code) {
-                    Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, { color: 'red', lineWidth: 3 });
-                }
+            
+            // Llenar el campo de búsqueda con el código escaneado
+            searchQuery.value = code;
+            
+            // Asegurarse de que estamos en modo búsqueda por código
+            if (busquedaPorDescripcion) {
+                tabCodigo.click();
             }
-        });
-    }
+            
+            // Ejecutar la búsqueda automáticamente
+            buscarProductos(code, 'codigo');
+            
+        }, 1000);
+    });
+    
+    // Código para ayudar a visualizar lo que se está detectando
+    Quagga.onProcessed(function(result) {
+        const drawingCtx = Quagga.canvas.ctx.overlay;
+        const drawingCanvas = Quagga.canvas.dom.overlay;
+
+        if (result) {
+            if (result.boxes) {
+                drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
+                result.boxes.filter(function(box) {
+                    return box !== result.box;
+                }).forEach(function(box) {
+                    Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: "green", lineWidth: 2 });
+                });
+            }
+
+            if (result.box) {
+                Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: "#00F", lineWidth: 2 });
+            }
+
+            if (result.codeResult && result.codeResult.code) {
+                Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, { color: 'red', lineWidth: 3 });
+            }
+        }
+    });
+}
     
     // Función para detener el escáner
     function detenerEscaner() {

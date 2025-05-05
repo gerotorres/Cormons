@@ -145,23 +145,27 @@
     <div class="modal fade" id="scannerModal" tabindex="-1" aria-labelledby="scannerModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
-            <div class="modal-header bg-light">
+            <div class="modal-header bg-light py-2">
               <h5 class="modal-title" id="scannerModalLabel">Escanear Código de Barras</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-0">
-              <!-- Contenedor del escáner con proporción 4:3 -->
+              <!-- Contenedor del escáner con proporción adaptable -->
               <div class="ratio ratio-4x3 bg-dark">
-                <div id="scanner-viewport" class="w-100 h-100 overflow-hidden"></div>
+                <div id="scanner-viewport" class="w-100 h-100 overflow-hidden">
+                  <!-- Guía visual para centrar el código -->
+                  <div class="scanning-guide"></div>
+                </div>
               </div>
-              <!-- Barra de estado del escaneo -->
-              <div class="p-3 text-center">
+              <!-- Instrucciones más claras -->
+              <div class="p-2 text-center bg-light">
                 <div id="scanning-status" class="fw-medium text-primary">
                   Iniciando cámara...
                 </div>
+                <small class="text-muted d-block mt-1">Mantenga el dispositivo estable.</small>
               </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer py-2">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
             </div>
           </div>
