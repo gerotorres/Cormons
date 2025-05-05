@@ -4,6 +4,12 @@ from rest_framework import status
 from .models import Producto
 from .serializers import ProductoSerializer
 
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.admin.views.decorators.staff_member_required import staff_member_required
+import subprocess
+import os
+
 class BusquedaProductoAPIView(APIView):
     def get(self, request):
         query = request.query_params.get('q', '')
@@ -43,3 +49,16 @@ class BusquedaProductoAPIView(APIView):
             "cantidad": productos.count(),
             "productos": serializer.data
         })
+
+@csrf_exempt
+@staff_member_required
+def cargar_datos_prueba(request):
+    try:
+        # Obtener la ruta absoluta del script
+        script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'crear_datos_prueba.py')
+        
+        # Ejecuta el script
+        subprocess.run(['python', script_path], check=True)
+        return HttpResponse("Datos de prueba cargados correctamente")
+    except Exception as e:
+        return HttpResponse(f"Error al cargar datos: {str(e)}")

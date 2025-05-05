@@ -16,7 +16,7 @@ class Command(BaseCommand):
         productos = [
             {'codigo': 'A001', 'descripcion': 'Martillo profesional', 'stock': 45},
             {'codigo': 'A002', 'descripcion': 'Destornillador Phillips', 'stock': 120},
-            {'codigo': 'A003', 'descripcion': 'Sierra circular 7"', 'stock': 18},
+            {'codigo': '786896987', 'descripcion': 'Sierra circular 7"', 'stock': 18},
             # Añadir más productos...
         ]
         

@@ -1,4 +1,3 @@
-// web/static/web/js/buscador.js
 document.addEventListener('DOMContentLoaded', function() {
     // Elementos DOM
     const searchForm = document.getElementById('search-form');
@@ -104,12 +103,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 detenerEscaner();
             });
         } else {
-            // Fallback para cuando Bootstrap JS no está disponible
             scannerModalEl.style.display = 'block';
             scannerModalEl.classList.add('show');
             document.body.classList.add('modal-open');
             
-            // Crear un backdrop manualmente
             const backdrop = document.createElement('div');
             backdrop.className = 'modal-backdrop fade show';
             document.body.appendChild(backdrop);
@@ -127,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Función para cerrar el modal manualmente si Bootstrap JS no está disponible
     function cerrarModalManualmente(modal, backdrop) {
         detenerEscaner();
         modal.style.display = 'none';
@@ -147,7 +143,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // El contenedor del escáner
         const readerDiv = document.getElementById('reader');
         
-        // Configuración optimizada para smartphones
         const config = {
             fps: 10,                       // Menor frames para mejor procesamiento
             qrbox: { width: 250, height: 150 }, // Área de escaneo para códigos de barras
@@ -173,14 +168,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Validación básica del código
             if (!decodedText || decodedText.length < 4) {
                 console.log("Código inválido detectado:", decodedText);
-                return; // Ignorar códigos muy cortos
+                return; 
             }
             
-            // Importante: Detener el escáner inmediatamente para evitar escaneos múltiples
             html5QrScanner.stop().then(() => {
                 console.log(`Código detectado: ${decodedText} (formato: ${decodedResult.result.format ? decodedResult.result.format.formatName : 'desconocido'})`);
                 
-                // Reproducir un sonido de éxito (opcional)
                 try {
                     const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
                     beepSound.play().catch(e => console.log("No se pudo reproducir el sonido", e));
@@ -212,8 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (busquedaPorDescripcion) {
                         tabCodigo.click();
                     }
-                    
-                    // Ejecutar la búsqueda UNA SOLA VEZ
+                
                     buscarProductos(decodedText, 'codigo');
                     
                 }, 1000);
