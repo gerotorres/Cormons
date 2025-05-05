@@ -7,7 +7,7 @@ from .serializers import ProductoSerializer
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.management import call_command
-from django.utils.six import StringIO
+import io
 import sys
 
 class BusquedaProductoAPIView(APIView):
@@ -54,7 +54,7 @@ class BusquedaProductoAPIView(APIView):
 def cargar_datos_prueba(request):
     try:
         # Capturar la salida del comando
-        out = StringIO()
+        out = io.StringIO()
         sys.stdout = out
         
         # Ejecutar el comando de management
