@@ -51,7 +51,6 @@ class BusquedaProductoAPIView(APIView):
         })
 
 @csrf_exempt
-@staff_member_required
 def cargar_datos_prueba(request):
     try:
         # Obtener la ruta absoluta del script
