@@ -17,11 +17,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Estado de la aplicación 
     let busquedaPorDescripcion = false;
+
+    function actualizarInputMode() {
+        if (busquedaPorDescripcion) {
+            searchQuery.setAttribute('inputmode', 'text');
+            searchQuery.placeholder = "Ingrese descripción del producto...";
+        } else {
+            searchQuery.setAttribute('inputmode', 'numeric');
+            searchQuery.placeholder = "Ingrese código del producto...";
+        }
+    }
     
     if (!tabCodigo.classList.contains('active')) {
         tabCodigo.classList.add('active');
         tabDescripcion.classList.remove('active');
     }
+
+    actualizarInputMode();
     
     searchQuery.placeholder = "Ingrese código del producto...";
     
@@ -36,12 +48,15 @@ document.addEventListener('DOMContentLoaded', function() {
         tabDescripcion.classList.add('sliding-in');
         
         busquedaPorDescripcion = true;
+
+        actualizarInputMode();
         searchQuery.placeholder = "Ingrese descripción del producto...";
         
         // Limpiar el campo de búsqueda al cambiar de pestaña
         searchQuery.value = '';
-        // Enfocar el campo de búsqueda
-        searchQuery.focus();
+
+        forceFocusAndKeyboard();
+
     });
     
     tabCodigo.addEventListener('click', function() {
@@ -54,12 +69,15 @@ document.addEventListener('DOMContentLoaded', function() {
         tabCodigo.classList.add('sliding-in');
         
         busquedaPorDescripcion = false;
-        searchQuery.placeholder = "Ingrese código del producto...";
+        
+        // Actualizar el modo de entrada y forzar apertura de teclado
+        actualizarInputMode();
         
         // Limpiar el campo de búsqueda al cambiar de pestaña
         searchQuery.value = '';
-        // Enfocar el campo de búsqueda
-        searchQuery.focus();
+        
+        // Enfocar el campo de búsqueda y forzar apertura del teclado
+        forceFocusAndKeyboard();
     });
     
     // Manejo del formulario de búsqueda
@@ -76,6 +94,46 @@ document.addEventListener('DOMContentLoaded', function() {
         buscarProductos(query, busquedaPorDescripcion ? 'descripcion' : 'codigo');
     });
     
+    function forceFocusAndKeyboard() {
+        // Desenfocamos primero para asegurar que se vuelva a abrir el teclado
+        searchQuery.blur();
+        
+        // Pequeño retraso antes de enfocar nuevamente
+        setTimeout(() => {
+            // Hacer scroll al input para asegurarse de que está visible
+            searchQuery.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Dar foco al input para mostrar el teclado
+            searchQuery.focus();
+            
+            // En algunos dispositivos iOS, esto ayuda a forzar la apertura del teclado
+            searchQuery.click();
+            
+            // Otra técnica que puede ayudar en iOS
+            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                // Simular un toque en el input
+                const touchEvent = new TouchEvent('touchstart', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                });
+                searchQuery.dispatchEvent(touchEvent);
+            }
+        }, 100);
+    }
+    
+    // Inicialización cuando la página carga
+    mostrarMensaje("Ingrese un código para ver resultados");
+    
+    // Forzar apertura del teclado al cargar la página (con retraso adicional para móviles)
+    setTimeout(forceFocusAndKeyboard, 500);
+    
+    // También forzar cuando el usuario cambia de orientación
+    window.addEventListener('orientationchange', function() {
+        setTimeout(forceFocusAndKeyboard, 500);
+    });
+
+
     // Funcionalidad del botón de código de barras
     cameraBtn.addEventListener('click', function() {
         // Verificar si el navegador soporta getUserMedia (acceso a la cámara)
