@@ -423,6 +423,46 @@ document.addEventListener('DOMContentLoaded', function() {
     
     mostrarMensaje("Ingrese un código para ver resultados");
     
-    // Enfoque en el input de búsqueda al cargar la página
-    searchQuery.focus();
+    function focusSearchInputOnMobile() {
+        const searchQuery = document.getElementById('search-query');
+        
+        // Verificar si es un dispositivo móvil
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+            // En iOS, necesitamos un pequeño retraso para que funcione correctamente
+            setTimeout(function() {
+                // Hacer scroll al input para asegurarse de que está visible
+                searchQuery.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Dar foco al input para mostrar el teclado
+                searchQuery.focus();
+                
+                // En algunos dispositivos iOS, esto ayuda a forzar la apertura del teclado
+                searchQuery.click();
+                
+                // Otra técnica que puede ayudar en casos difíciles
+                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                    // Simular un toque en el input (ayuda en iOS)
+                    const touchEvent = new TouchEvent('touchstart', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    searchQuery.dispatchEvent(touchEvent);
+                }
+            }, 500); // Retraso para asegurar que la página está completamente cargada
+        } else {
+            // En escritorio, simplemente enfocamos el input
+            searchQuery.focus();
+        }
+    }
+    
+    // Llamar a la función de enfoque
+    focusSearchInputOnMobile();
+    
+    // También podemos enfocar cuando el usuario cambia de orientación
+    window.addEventListener('orientationchange', function() {
+        setTimeout(focusSearchInputOnMobile, 300);
+    });
 });

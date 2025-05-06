@@ -4,11 +4,6 @@ from rest_framework import status
 from .models import Producto
 from .serializers import ProductoSerializer
 
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.core.management import call_command
-import io
-import sys
 
 class BusquedaProductoAPIView(APIView):
     def get(self, request):
@@ -49,47 +44,3 @@ class BusquedaProductoAPIView(APIView):
             "cantidad": productos.count(),
             "productos": serializer.data
         })
-
-@csrf_exempt
-def cargar_datos_prueba(request):
-    try:
-        # Importar lo necesario
-        from api.models import Producto
-        import random
-        
-        # Borrar datos existentes
-        Producto.objects.all().delete()
-        
-        # Lista de productos de ejemplo
-        productos = [
-            {'codigo': 'A001', 'descripcion': 'Martillo profesional', 'stock': 45},
-            {'codigo': 'A002', 'descripcion': 'Destornillador Phillips', 'stock': 120},
-            {'codigo': '786896987', 'descripcion': 'Sierra circular 7"', 'stock': 18},
-        ]
-        
-        # Crear más productos ficticios
-        categorias = ['Herramientas', 'Electricidad', 'Plomería', 'Jardinería', 'Pintura']
-        items = ['Llave', 'Cable', 'Tubo', 'Pinza', 'Tornillo', 'Pala', 'Brocha', 'Cinta']
-        
-        for i in range(1, 201):
-            codigo = f'P{i:04d}'
-            categoria = random.choice(categorias)
-            item = random.choice(items)
-            descripcion = f'{categoria} - {item} {i}'
-            stock = random.randint(0, 200)
-            
-            productos.append({
-                'codigo': codigo,
-                'descripcion': descripcion,
-                'stock': stock
-            })
-        
-        # Crear los productos
-        for producto_data in productos:
-            Producto.objects.create(**producto_data)
-            
-        return HttpResponse(f'Se crearon {len(productos)} productos de prueba')
-    except Exception as e:
-        import traceback
-        error_traceback = traceback.format_exc()
-        return HttpResponse(f"Error al cargar datos: {str(e)}<br><pre>{error_traceback}</pre>")
