@@ -192,121 +192,178 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Nueva función para iniciar el escáner usando Html5-QRCode
-    function iniciarHtml5QrScanner() {
-        const scanningStatus = document.getElementById('scanning-status');
-        scanningStatus.textContent = "Iniciando cámara...";
-        scanningStatus.className = "fw-medium text-primary";
+    // Modificar la función iniciarHtml5QrScanner con estos cambios
+function iniciarHtml5QrScanner() {
+    const scanningStatus = document.getElementById('scanning-status');
+    scanningStatus.textContent = "Iniciando cámara...";
+    scanningStatus.className = "fw-medium text-primary";
+    
+    // El contenedor del escáner
+    const readerDiv = document.getElementById('reader');
+    
+    // Limpiar el contenedor para evitar superposiciones
+    readerDiv.innerHTML = '';
+    
+    // Configuración mejorada para evitar problemas de cámara duplicada
+    const config = {
+        fps: 10,                       // Velocidad de fotogramas reducida
+        qrbox: { width: 250, height: 150 }, // Área de escaneo
+        rememberLastUsedCamera: true,  // Recordar última cámara
+        aspectRatio: undefined,        // No forzar relación de aspecto específica
+        showTorchButtonIfSupported: true, // Mostrar botón de linterna
+        videoConstraints: {            // Restricciones específicas de video
+            facingMode: "environment",  // Cámara trasera por defecto
+            width: { ideal: 1280 },     // Resolución óptima
+            height: { ideal: 720 }
+        },
+        formatsToSupport: [            // Formatos a soportar
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODABAR
+        ]
+    };
+    
+    // Crear instancia del escáner
+    html5QrScanner = new Html5Qrcode("reader");
+    
+    // Función para manejar un escaneo exitoso
+    const onScanSuccess = (decodedText, decodedResult) => {
+        // Validación básica del código
+        if (!decodedText || decodedText.length < 4) {
+            console.log("Código inválido detectado:", decodedText);
+            return; 
+        }
         
-        // El contenedor del escáner
-        const readerDiv = document.getElementById('reader');
-        
-        const config = {
-            fps: 10,                       // Menor frames para mejor procesamiento
-            qrbox: { width: 250, height: 150 }, // Área de escaneo para códigos de barras
-            rememberLastUsedCamera: true,  // Recordar última cámara
-            aspectRatio: 1.0,              // Relación de aspecto cuadrada (mejor para códigos de barras)
-            showTorchButtonIfSupported: true, // Mostrar botón de linterna si está disponible
-            formatsToSupport: [            // Formatos de códigos de barras a soportar
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.CODE_128,
-                Html5QrcodeSupportedFormats.CODE_39,
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.UPC_E,
-                Html5QrcodeSupportedFormats.CODABAR
-            ]
-        };
-        
-        // Crear instancia del escáner
-        html5QrScanner = new Html5Qrcode("reader");
-        
-        // Función para manejar un escaneo exitoso
-        const onScanSuccess = (decodedText, decodedResult) => {
-            // Validación básica del código
-            if (!decodedText || decodedText.length < 4) {
-                console.log("Código inválido detectado:", decodedText);
-                return; 
+        html5QrScanner.stop().then(() => {
+            console.log(`Código detectado: ${decodedText} (formato: ${decodedResult.result.format ? decodedResult.result.format.formatName : 'desconocido'})`);
+            
+            try {
+                const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
+                beepSound.play().catch(e => console.log("No se pudo reproducir el sonido", e));
+            } catch (e) {
+                console.log("Error al reproducir sonido:", e);
             }
             
-            html5QrScanner.stop().then(() => {
-                console.log(`Código detectado: ${decodedText} (formato: ${decodedResult.result.format ? decodedResult.result.format.formatName : 'desconocido'})`);
-                
-                try {
-                    const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
-                    beepSound.play().catch(e => console.log("No se pudo reproducir el sonido", e));
-                } catch (e) {
-                    console.log("Error al reproducir sonido:", e);
+            // Mostrar el código detectado
+            scanningStatus.textContent = `Código detectado: ${decodedText}`;
+            scanningStatus.className = "fw-medium text-success";
+            
+            // Cerrar el modal después de un breve retraso
+            setTimeout(function() {
+                if (typeof bootstrap !== 'undefined') {
+                    const scannerModal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
+                    if (scannerModal) {
+                        scannerModal.hide();
+                    }
+                } else {
+                    const modal = document.getElementById('scannerModal');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    cerrarModalManualmente(modal, backdrop);
                 }
                 
-                // Mostrar el código detectado
-                scanningStatus.textContent = `Código detectado: ${decodedText}`;
-                scanningStatus.className = "fw-medium text-success";
+                // Llenar el campo de búsqueda con el código escaneado
+                searchQuery.value = decodedText;
                 
-                // Cerrar el modal después de un breve retraso
-                setTimeout(function() {
-                    if (typeof bootstrap !== 'undefined') {
-                        const scannerModal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
-                        if (scannerModal) {
-                            scannerModal.hide();
-                        }
-                    } else {
-                        const modal = document.getElementById('scannerModal');
-                        const backdrop = document.querySelector('.modal-backdrop');
-                        cerrarModalManualmente(modal, backdrop);
-                    }
-                    
-                    // Llenar el campo de búsqueda con el código escaneado
-                    searchQuery.value = decodedText;
-                    
-                    // Asegurarse de que estamos en modo búsqueda por código
-                    if (busquedaPorDescripcion) {
-                        tabCodigo.click();
-                    }
+                // Asegurarse de que estamos en modo búsqueda por código
+                if (busquedaPorDescripcion) {
+                    tabCodigo.click();
+                }
+            
+                buscarProductos(decodedText, 'codigo');
                 
-                    buscarProductos(decodedText, 'codigo');
-                    
-                }, 1000);
-            }).catch(err => {
-                console.error("Error al detener el escáner:", err);
-            });
-        };
-        // Función para manejar errores
-        const onScanFailure = (error) => {
-            // Solo para errores reales, no para escaneos fallidos normales
-            if (error !== "No QR code found.") {
-                console.warn(`Error al escanear: ${error}`);
-            }
-        };
+            }, 1000);
+        }).catch(err => {
+            console.error("Error al detener el escáner:", err);
+        });
+    };
+    
+    // Función para manejar errores
+    const onScanFailure = (error) => {
+        // Solo para errores reales, no para escaneos fallidos normales
+        if (error !== "No QR code found.") {
+            console.warn(`Error al escanear: ${error}`);
+        }
+    };
+    
+    // Variables para manejo de errores y reconexión
+    let cameraAttempts = 0;
+    const maxCameraAttempts = 3;
+    
+    // Función para iniciar la cámara con manejo de errores
+    function startCamera() {
+        if (cameraAttempts >= maxCameraAttempts) {
+            scanningStatus.textContent = `No se pudo iniciar la cámara después de varios intentos. Intente ingresar el código manualmente.`;
+            scanningStatus.className = "fw-medium text-danger";
+            return;
+        }
         
-        // Iniciar la cámara en modo escaner
+        cameraAttempts++;
+        
+        // Iniciar la cámara con configuración específica
         html5QrScanner.start(
-            { facingMode: "environment" }, // Preferir cámara trasera
+            config.videoConstraints,  // Usar restricciones de video específicas
             config,
             onScanSuccess,
             onScanFailure
         ).then(() => {
             scanningStatus.textContent = "Centre el código de barras en el recuadro";
             scanningStatus.className = "fw-medium text-primary scanning-active";
+            
+            // Ajustar estilos de video para evitar superposiciones
+            setTimeout(() => {
+                const videoElement = readerDiv.querySelector('video');
+                if (videoElement) {
+                    videoElement.style.transform = 'none';  // Eliminar transformaciones
+                    videoElement.style.filter = 'none';     // Eliminar filtros
+                    videoElement.style.objectFit = 'cover'; // Ajustar el contenido
+                }
+            }, 500);
+            
         }).catch((err) => {
-            scanningStatus.textContent = `Error: ${err}. Intente nuevamente o ingrese el código manualmente.`;
-            scanningStatus.className = "fw-medium text-danger";
             console.error("Error al iniciar la cámara:", err);
+            scanningStatus.textContent = `Error: ${err}. Intentando nuevamente...`;
+            
+            // Esperar un momento y reintentar con configuración alternativa
+            setTimeout(() => {
+                // Si falla, intentar con configuración alternativa
+                if (cameraAttempts === 1) {
+                    config.videoConstraints = { facingMode: "environment" };
+                    startCamera();
+                } else if (cameraAttempts === 2) {
+                    // Última configuración de respaldo
+                    config.videoConstraints = undefined;
+                    startCamera();
+                }
+            }, 1000);
         });
     }
     
-    // Función para detener el escáner
-    function detenerEscaner() {
-        if (html5QrScanner && html5QrScanner.isScanning) {
-            try {
-                html5QrScanner.stop().catch(err => {
-                    console.error("Error al detener el escáner:", err);
-                });
-            } catch (err) {
-                console.error("Error al intentar detener el escáner:", err);
+    // Iniciar la cámara con manejo de errores
+    startCamera();
+}
+
+// También es necesario modificar la función detenerEscaner
+function detenerEscaner() {
+    if (html5QrScanner && html5QrScanner.isScanning) {
+        try {
+            html5QrScanner.stop().catch(err => {
+                console.error("Error al detener el escáner:", err);
+            });
+        } catch (err) {
+            console.error("Error al intentar detener el escáner:", err);
+        } finally {
+            // Limpiar el contenedor del lector para evitar problemas
+            const readerDiv = document.getElementById('reader');
+            if (readerDiv) {
+                readerDiv.innerHTML = '';
             }
         }
     }
+}
     
     // Función para buscar productos
     function buscarProductos(query, tipo) {

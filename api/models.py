@@ -7,5 +7,3 @@ class Producto(models.Model):
     
     def __str__(self):
         return f"{self.codigo} - {self.descripcion}"
-
-# Opcionalmente, agregar más modelos como Categoría si necesitas organizar productos

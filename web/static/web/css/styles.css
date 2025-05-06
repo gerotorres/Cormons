@@ -186,28 +186,55 @@ main {
   min-height: 400px !important;
   border: none !important;
   box-shadow: none !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
-/* Mejoras para dispositivos móviles */
+/* Ajustes para el video de la cámara */
+#reader video {
+  width: 100% !important;
+  height: auto !important;
+  object-fit: cover !important;
+  max-height: 70vh !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  filter: none !important;
+}
+
+/* Región de escaneo */
+#reader__scan_region {
+  background-color: #f8f9fa !important;
+  padding: 10px !important;
+  position: relative !important;
+}
+
+/* Eliminar posibles elementos duplicados */
+#reader canvas:not(:first-of-type) {
+  display: none !important;
+}
+
+/* Ajustes para el selector de cámara */
+#reader select {
+  max-width: 100% !important;
+  margin: 10px auto !important;
+  font-size: 16px !important;
+}
+
+/* Ajustes para dispositivos móviles */
 @media (max-width: 767px) {
   #reader {
     min-height: 350px !important;
   }
-
-  #reader video {
-    max-height: 70vh !important;
-    object-fit: cover !important;
+  
+  /* Corregir elementos duplicados en móviles */
+  #reader div:has(> video) {
+    position: relative !important;
+    overflow: hidden !important;
   }
   
-  /* Mejorar selección de cámara */
-  #reader select {
-    max-width: 100% !important;
-    margin: 10px auto !important;
-    font-size: 16px !important; /* Evita zoom en iOS */
-  }
-  
-  #reader__scan_region {
-    margin-bottom: 10px !important;
+  /* Asegurar que solo hay un video visible */
+  #reader video:not(:first-child) {
+    display: none !important;
   }
   
   /* Modal más grande en móviles */
@@ -215,18 +242,6 @@ main {
     max-width: 95%;
     margin: 10px auto;
   }
-}
-
-/* Mejoras estéticas para la UI de Html5-QRCode */
-#reader__scan_region {
-  background-color: #f8f9fa !important;
-  padding: 10px !important;
-}
-
-#reader__dashboard_section_swaplink {
-  color: var(--primary-color) !important;
-  text-decoration: none !important;
-  font-weight: 500 !important;
 }
 
 /* Estado del escaneo */
