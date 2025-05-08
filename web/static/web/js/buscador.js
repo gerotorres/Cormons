@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
             searchQuery.setAttribute('inputmode', 'text');
             searchQuery.placeholder = "Ingrese descripción del producto...";
         } else {
-            searchQuery.setAttribute('inputmode', 'numeric');
+            searchQuery.setAttribute('inputmode', 'text');
             searchQuery.placeholder = "Ingrese código del producto...";
         }
     }
